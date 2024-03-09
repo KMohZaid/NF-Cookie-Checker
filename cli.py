@@ -22,7 +22,7 @@ class CookieTester:
                     try:                           
                         cookies[lineFields[5]] = lineFields[6]
                     except Exception as e:
-                        if lineFields.get(6) is None:
+                        if len(lineFields) == 7: # lineFields[6] not exists because length is not 7(index 6)
                             return f"There is no value for {lineFields[5]} given in cookie file {cookiefile}"
                         return f"Error parsing {cookiefile}: {e}"
 
