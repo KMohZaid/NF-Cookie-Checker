@@ -1,12 +1,25 @@
 import signal
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QFileDialog, QTextEdit, QMessageBox
-from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtCore import Qt, QTimer, QObject, QThread, pyqtSignal
 from PyQt6.QtGui import QIcon
 import sys
 import os
 import datetime
 
 from cli import CookieTester
+
+# Step 1: Create a worker class
+class Worker(QObject):
+    finished = pyqtSignal()
+    progress = pyqtSignal(int)
+    
+    def __init__(self, folder_path, appendText):
+        super().__init__(None)
+        self.folder_path = folder_path
+        self.appendText = appendText
+
+    def run(self):
+        CookieTester.run(self.folder_path, "https://netflix.com", self.appendText)
 
 class CookieCheckerApp(QWidget):
     def __init__(self):
@@ -44,23 +57,41 @@ class CookieCheckerApp(QWidget):
             self.text_edit.append(f"Selected Folder: {self.folder_path}\n")
 
     def startTesting(self):
+        
         if self.folder_path:
             # Set logging file details
-            log_dir = os.path.join(self.folder_path, "nf_checker_logs")
+            log_dir = os.path.join(self.folder_path, "gui_nf_checker_logs")
             if not os.path.exists(log_dir):
                 os.makedirs(log_dir)
             log_file = os.path.join(log_dir, f"nf_checker_log_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.txt")
             
-            self.start_button.setDisabled(True)  # Disable start button during testing
+            self.start_button.setEnabled(False)  # Disable start button during testing
             
+            # Step 2: Create a QThread object
+            self.thread = QThread()
+            # Step 3: Create a worker object
+            self.worker = Worker(self.folder_path,self.appendText)
+            # Step 4: Move worker to the thread
+            self.worker.moveToThread(self.thread)
+            # Step 5: Connect signals and slots
+            self.thread.started.connect(self.worker.run)
+            self.worker.finished.connect(self.thread.quit)
+            self.worker.finished.connect(self.worker.deleteLater)
+            self.thread.finished.connect(self.thread.deleteLater)
+            # Step 6: Start the thread
+            self.thread.start()
+            
+            def end():
+                # Enable start button after testing
+                self.longRunningBtn.setEnabled(True)
+                # Log the contains of text box
+                open(log_file,"w").write(self.text_edit.toPlainText())
+                
+                QMessageBox.information(self,"Success","Testing done successfully")
+            self.thread.finished.connect(end)
+            
+
             QMessageBox.information(self, "Testing in progress", "Please wait. Script is testing all cookie file. I am noob coder + lazy so skipped adding Thread. Program will be freezy 😁🦥🦥🦥")
-            CookieTester.run(self.folder_path, "https://netflix.com", self.appendText)
-                        
-            # Log the contains of text box
-            with open(log_file,"w") as f:
-              f.write(self.text_edit.toPlainText())
-            
-            self.start_button.setDisabled(False)  # Re-enable start button after testing
         else:
             QMessageBox.warning(self, "Error", "Please select a folder before starting testing.")
 
