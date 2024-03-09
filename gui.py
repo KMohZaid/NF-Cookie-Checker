@@ -13,13 +13,19 @@ class Worker(QObject):
     finished = pyqtSignal()
     progress = pyqtSignal(int)
     
-    def __init__(self, folder_path, appendText):
+    def __init__(self, that, log_file):
         super().__init__(None)
-        self.folder_path = folder_path
-        self.appendText = appendText
+        self.that = that
+        self.log_file = log_file
 
     def run(self):
-        CookieTester.run(self.folder_path, "https://netflix.com", self.appendText)
+        CookieTester.run(self.that.folder_path, "https://netflix.com", self.that.appendText)
+        
+        
+        # Enable start button after testing
+        self.that.start_button.setEnabled(True)
+        # Log the contains of text box
+        open(self.log_file,"w").write(self.that.text_edit.toPlainText())
 
 class CookieCheckerApp(QWidget):
     def __init__(self):
@@ -70,26 +76,14 @@ class CookieCheckerApp(QWidget):
             # Step 2: Create a QThread object
             self.thread = QThread()
             # Step 3: Create a worker object
-            self.worker = Worker(self.folder_path,self.appendText)
+            self.worker = Worker(self, log_file)
             # Step 4: Move worker to the thread
             self.worker.moveToThread(self.thread)
             # Step 5: Connect signals and slots
             self.thread.started.connect(self.worker.run)
-            self.worker.finished.connect(self.thread.quit)
-            self.worker.finished.connect(self.worker.deleteLater)
-            self.thread.finished.connect(self.thread.deleteLater)
+            
             # Step 6: Start the thread
             self.thread.start()
-            
-            def end():
-                # Enable start button after testing
-                self.longRunningBtn.setEnabled(True)
-                # Log the contains of text box
-                open(log_file,"w").write(self.text_edit.toPlainText())
-                
-                QMessageBox.information(self,"Success","Testing done successfully")
-            self.thread.finished.connect(end)
-            
 
             QMessageBox.information(self, "Testing in progress", "Please wait. Script is testing all cookie file. I am noob coder + lazy so skipped adding Thread. Program will be freezy 😁🦥🦥🦥")
         else:
