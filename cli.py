@@ -72,9 +72,9 @@ class CookieTester:
         if not os.path.exists(out_dir):
             os.makedirs(out_dir)
             
-        deaed_dir = os.path.join(directory, "dead_cookies/")
-        if not os.path.exists(deaed_dir):
-            os.makedirs(deaed_dir)
+        dead_dir = os.path.join(directory, "dead_cookies/")
+        if not os.path.exists(dead_dir):
+            os.makedirs(dead_dir)
     
         i = 0
         for filename in listdir:
@@ -89,7 +89,7 @@ class CookieTester:
                     os.rename(cookie_file, os.path.join(out_dir, filename))
                     i += 1
                 else:
-                    os.rename(cookie_file, os.path.join(out_dir,deaed_dir))
+                    os.rename(cookie_file, os.path.join(dead_dir,filename))
     
         send_out("="*50)
         send_out(f"Total cookies file checked: {len(listdir)}")
