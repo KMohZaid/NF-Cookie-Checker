@@ -4,89 +4,9 @@ from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QIcon
 import sys
 import os
-import re
-import requests
 import datetime
 
-class CookieTester:
-    @staticmethod
-    def parseCookieFile(cookiefile):
-        """Parse a cookies.txt file and return a dictionary of key value pairs
-        compatible with requests.
-    
-        not using cookielib because not in python3 : https://stackoverflow.com/a/54659484"""
-    
-        cookies = {}
-        with open(cookiefile, 'r') as fp:
-            for line in fp:
-                if not re.match(r'^\#', line):
-                    lineFields = re.findall(r'[^\s]+', line)  # capturing anything but empty space
-                    try:
-                        cookies[lineFields[5]] = lineFields[6]
-                    except Exception as e:
-                        return f"Error parsing {cookiefile}: {e}"
-
-        return cookies
-    
-    @staticmethod
-    def test_cookie(cookie_file, url, append_text):
-        """Tests if a cookies file is working by sending a GET request to a URL with the cookie.
-    
-        Args:
-            cookie_file: The path to the file containing the Netscape cookie.
-            url: The URL to which the GET request should be sent.
-    
-        Returns:
-            True if the cookie is working, False otherwise.
-        """
-    
-        r = CookieTester.parseCookieFile(cookie_file)
-        
-        if isinstance(r, str):
-          append_text(r)
-          return False
-        
-        cookies = r
-    
-        r = requests.get(url, cookies=r)
-    
-        if "Sign in" not in r.text:
-            return True
-        else:
-            return False
-    
-    @staticmethod
-    def run(directory, url, append_text):
-        """Iterates over all files in a directory and tests if the cookies in Netscape format are working by sending a GET request to a URL with the cookie.
-    
-        Args:
-            directory: The path to the directory containing the Netscape cookie files.
-            url: The URL to which the GET request should be sent.
-            send_msg: The method to append text to the text editor.
-        """
-        
-        listdir = [name for name in os.listdir(directory) if os.path.isfile(os.path.join(directory, name))]
-    
-        out_dir = os.path.join(directory, "works/")
-        if not os.path.exists(out_dir):
-            os.makedirs(out_dir)
-    
-        i = 0
-        for filename in listdir:
-            if filename.endswith(".txt"):
-                cookie_file = os.path.join(directory, filename)
-    
-                if CookieTester.test_cookie(cookie_file, url, append_text):
-                    append_text(f"Cookie in file {filename} is working.\n")
-                    os.rename(cookie_file, os.path.join(out_dir, filename))
-                    i += 1
-                else:
-                    pass  # print("Cookie in file {} is not working.".format(filename))
-    
-        append_text("="*50+"\n")
-        append_text(f"Total cookies file checked: {len(listdir)}\n")
-        append_text(f"Only {i} file working\n")
-
+from cli import CookieTester
 
 class CookieCheckerApp(QWidget):
     def __init__(self):
@@ -145,7 +65,7 @@ class CookieCheckerApp(QWidget):
             QMessageBox.warning(self, "Error", "Please select a folder before starting testing.")
 
     def appendText(self, text):
-        self.text_edit.append(text)
+        self.text_edit.append(text+"\n")
 
 def sigint_handler(*args):
     """Handler for the SIGINT signal."""
